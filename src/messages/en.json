@@ -1,0 +1,87 @@
+{
+  "common": {
+    "appName": "TrackHub",
+    "tagline": "B2B Multi-Courier Bulk Tracking Workspace for E-commerce Sellers",
+    "version": "v1.0.0",
+    "loading": "Loading...",
+    "search": "Search tracking number or courier...",
+    "reset": "Reset",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "openTab": "Open Tab",
+    "openAll": "Open All Tabs",
+    "export": "Export Data",
+    "actions": "Actions",
+    "status": "Status",
+    "allCouriers": "All Couriers",
+    "autoDetect": "Auto Detect",
+    "selected": "{count} waybills selected",
+    "language": "Language"
+  },
+  "nav": {
+    "dashboard": "Workspace",
+    "docs": "Documentation",
+    "github": "GitHub"
+  },
+  "bulkInput": {
+    "title": "Bulk Waybill Input",
+    "description": "Enter one waybill number per line, or separate with commas/spaces.",
+    "placeholder": "Example:\nP2601080046258\nJP5034350637\n002727224890\nSPXID04829103847\nSOCAG001234567",
+    "processBtn": "Process All Waybills",
+    "clearBtn": "Clear Input",
+    "sampleBtn": "Load Sample Waybills",
+    "detectedCount": "Detected {count} unique waybills",
+    "duplicatesRemoved": "{count} duplicates cleaned",
+    "defaultCourierLabel": "Lock Courier (Optional):"
+  },
+  "table": {
+    "colIndex": "No",
+    "colResi": "Waybill Number",
+    "colCourier": "Courier",
+    "colDirectLink": "Official Link",
+    "colMirrorLink": "Mirror Link",
+    "colStatusNote": "Seller Note",
+    "colCreatedAt": "Input Time",
+    "emptyState": "No waybills processed yet. Please paste tracking numbers into the input panel on the left.",
+    "statusPending": "Pending Check",
+    "statusInTransit": "In Transit",
+    "statusDelivered": "Delivered",
+    "statusIssue": "Issue / Return"
+  },
+  "export": {
+    "title": "Export Tracking Report",
+    "description": "Download waybills and active tracking links directly into a spreadsheet.",
+    "formatExcel": "Microsoft Excel (.xlsx)",
+    "formatCsv": "Comma Separated (.csv)",
+    "scopeAll": "All Waybills ({count})",
+    "scopeSelected": "Selected Waybills Only ({count})",
+    "downloadBtn": "Download Spreadsheet",
+    "fileNameDefault": "TrackHub-Waybill-Report"
+  },
+  "couriers": {
+    "pos": "Pos Indonesia",
+    "jnt": "J&T Express",
+    "sicepat": "SiCepat",
+    "spx": "Shopee Xpress",
+    "jne": "JNE Express",
+    "anteraja": "Anteraja",
+    "tiki": "TIKI",
+    "wahana": "Wahana",
+    "lion": "Lion Parcel",
+    "ninja": "Ninja Xpress",
+    "idexpress": "ID Express",
+    "unknown": "Other / Manual"
+  },
+  "home": {
+    "badge": "Phase 1 • Architecture Ready",
+    "techStack": "Next.js 16 + Tailwind v4",
+    "title": "TrackHub B2B Logistics Workspace",
+    "subtitle": "High-performance bulk waybill tracking workspace with automatic regex detection, official tracking links, and spreadsheet exports.",
+    "card1Title": "Smart Courier Auto-Detect",
+    "card1Desc": "Automatically recognizes waybill patterns for Pos Indonesia, J&T, SiCepat, SPX, JNE, and other major couriers.",
+    "card2Title": "Direct Deeplink Generator",
+    "card2Desc": "Generates direct links to official courier servers (including Pos Indonesia POD photos) and aggregator mirrors.",
+    "card3Title": "Spreadsheet Export (.xlsx)",
+    "card3Desc": "Download clean table reports with active hyperlink formulas ready for Microsoft Excel and Google Sheets."
+  }
+}
