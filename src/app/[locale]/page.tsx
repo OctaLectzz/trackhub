@@ -2,26 +2,27 @@
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
-import type { SellerStatus, TrackingItem } from "@/types/tracking";
+import type { TrackingItem } from "@/types/tracking";
+import { useTrackingWorkspace } from "@/hooks/use-tracking-workspace";
 import { BulkInputCard } from "@/components/tracking/bulk-input-card";
 import { TrackingTable } from "@/components/tracking/tracking-table";
 
 export default function HomePage(): React.JSX.Element {
   const t = useTranslations("home");
-  const [items, setItems] = React.useState<readonly TrackingItem[]>([]);
+  const {
+    items,
+    isHydrated,
+    setItems,
+    updateItemStatus,
+    clearWorkspace,
+  } = useTrackingWorkspace();
 
   const handleProcessItems = (newItems: readonly TrackingItem[]): void => {
     setItems(newItems);
   };
 
   const handleClearItems = (): void => {
-    setItems([]);
-  };
-
-  const handleStatusChange = (id: string, newStatus: SellerStatus): void => {
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
-    );
+    clearWorkspace();
   };
 
   return (
@@ -45,8 +46,9 @@ export default function HomePage(): React.JSX.Element {
 
         <div className="lg:col-span-8">
           <TrackingTable
-            items={items}
-            onStatusChange={handleStatusChange}
+            items={isHydrated ? items : []}
+            onStatusChange={updateItemStatus}
+            onClearWorkspace={clearWorkspace}
           />
         </div>
       </div>

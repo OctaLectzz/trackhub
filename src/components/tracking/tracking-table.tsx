@@ -17,19 +17,22 @@ import type { CourierId, SellerStatus, TrackingItem } from "@/types/tracking";
 import { getAllCouriers } from "@/lib/courier-registry";
 import { getTrackingColumns } from "@/components/tracking/tracking-columns";
 import { BatchLauncherBar } from "@/components/tracking/batch-launcher-bar";
+import { ExportDialog } from "@/components/tracking/export-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, ChevronLeft, ChevronRight, Package2 } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Package2, Download, Trash2 } from "lucide-react";
 
 interface TrackingTableProps {
   readonly items: readonly TrackingItem[];
   readonly onStatusChange: (id: string, status: SellerStatus) => void;
+  readonly onClearWorkspace?: () => void;
 }
 
 export function TrackingTable({
   items,
   onStatusChange,
+  onClearWorkspace,
 }: TrackingTableProps): React.JSX.Element {
   const tTable = useTranslations("table");
   const commonT = useTranslations("common");
@@ -40,6 +43,7 @@ export function TrackingTable({
   const [globalFilter, setGlobalFilter] = React.useState<string>("");
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
   const [selectedCourierFilter, setSelectedCourierFilter] = React.useState<string>("all");
+  const [isExportDialogOpen, setIsExportDialogOpen] = React.useState<boolean>(false);
 
   const couriersList = React.useMemo(() => getAllCouriers(), []);
 
@@ -123,6 +127,32 @@ export function TrackingTable({
                 </option>
               ))}
             </select>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsExportDialogOpen(true)}
+              disabled={items.length === 0}
+              className="h-8 gap-1.5 px-2.5 text-xs font-semibold text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+              title="Ekspor Laporan Spreadsheet"
+            >
+              <Download className="size-3.5" />
+              <span>{commonT("export")}</span>
+            </Button>
+
+            {onClearWorkspace && items.length > 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={onClearWorkspace}
+                className="size-8 text-muted-foreground hover:text-destructive"
+                title="Kosongkan Seluruh Workspace"
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -199,6 +229,13 @@ export function TrackingTable({
       <BatchLauncherBar
         selectedItems={selectedRows}
         onClearSelection={() => setRowSelection({})}
+      />
+
+      <ExportDialog
+        isOpen={isExportDialogOpen}
+        onClose={() => setIsExportDialogOpen(false)}
+        allItems={items}
+        selectedItems={selectedRows}
       />
     </Card>
   );
