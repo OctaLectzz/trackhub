@@ -16,6 +16,7 @@ import { useTranslations } from "next-intl";
 import type { CourierId, SellerStatus, TrackingItem } from "@/types/tracking";
 import { getAllCouriers } from "@/lib/courier-registry";
 import { getTrackingColumns } from "@/components/tracking/tracking-columns";
+import { TrackingDetailRow } from "@/components/tracking/tracking-detail-row";
 import { BatchLauncherBar } from "@/components/tracking/batch-launcher-bar";
 import { ExportDialog } from "@/components/tracking/export-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,17 +45,37 @@ export function TrackingTable({
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
   const [selectedCourierFilter, setSelectedCourierFilter] = React.useState<string>("all");
   const [isExportDialogOpen, setIsExportDialogOpen] = React.useState<boolean>(false);
+  const [expandedRows, setExpandedRows] = React.useState<Record<string, boolean>>({});
 
   const couriersList = React.useMemo(() => getAllCouriers(), []);
+
+  const handleToggleExpand = React.useCallback((id: string) => {
+    setExpandedRows((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  }, []);
+
+  const handleDeliveredDetected = React.useCallback(
+    (awb: string) => {
+      const found = items.find((i) => i.waybill.toUpperCase() === awb.toUpperCase());
+      if (found && found.status !== "delivered") {
+        onStatusChange(found.id, "delivered");
+      }
+    },
+    [items, onStatusChange]
+  );
 
   const columns = React.useMemo(
     () =>
       getTrackingColumns({
         onStatusChange,
+        expandedRows,
+        onToggleExpand: handleToggleExpand,
         tTable: (key: string) => tTable(key as Parameters<typeof tTable>[0]),
         tCommon: (key: string) => commonT(key as Parameters<typeof commonT>[0]),
       }),
-    [onStatusChange, tTable, commonT]
+    [onStatusChange, expandedRows, handleToggleExpand, tTable, commonT]
   );
 
   const tableData = React.useMemo(() => [...items], [items]);
@@ -111,7 +132,7 @@ export function TrackingTable({
                 value={globalFilter ?? ""}
                 onChange={(e) => setGlobalFilter(e.target.value)}
                 placeholder={commonT("search")}
-                className="h-8 w-44 rounded-lg border border-input bg-card pl-8 pr-3 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:w-56"
+                className="h-8 w-36 rounded-lg border border-input bg-card pl-8 pr-3 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:w-48"
               />
             </div>
 
@@ -174,15 +195,34 @@ export function TrackingTable({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows.length > 0 ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() ? "selected" : undefined}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              table.getRowModel().rows.map((row) => {
+                const item = row.original;
+                const isExpanded = !!expandedRows[item.id];
+
+                return (
+                  <React.Fragment key={row.id}>
+                    <TableRow data-state={row.getIsSelected() ? "selected" : undefined}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+
+                    {isExpanded && (
+                      <TableRow className="bg-muted/15 border-b border-border">
+                        <TableCell colSpan={columns.length} className="p-0">
+                          <TrackingDetailRow
+                            waybill={item.waybill}
+                            courier={item.courier}
+                            onDeliveredDetected={handleDeliveredDetected}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
+                );
+              })
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-32 text-center text-muted-foreground">

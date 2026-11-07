@@ -41,3 +41,30 @@ export interface SanitizeResult {
   readonly uniqueCount: number;
   readonly duplicateCount: number;
 }
+
+export interface TrackingHistoryItem {
+  readonly date: string;
+  readonly desc: string;
+  readonly location: string;
+}
+
+export interface TrackingDetailSummary {
+  readonly awb: string;
+  readonly courier: string;
+  readonly service: string;
+  readonly status: string;
+  readonly date: string;
+  readonly weight: string;
+  readonly origin: string;
+  readonly destination: string;
+  readonly shipper: string;
+  readonly receiver: string;
+}
+
+export interface TrackingDetailResult {
+  readonly success: boolean;
+  readonly summary: TrackingDetailSummary;
+  readonly history: readonly TrackingHistoryItem[];
+  readonly podPhotos?: readonly string[];
+  readonly message?: string;
+}

@@ -5,16 +5,20 @@ import type { ColumnDef } from "@tanstack/react-table";
 import type { SellerStatus, TrackingItem } from "@/types/tracking";
 import { CourierBadge } from "@/components/tracking/courier-badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Copy, Check, Eye } from "lucide-react";
+import { ExternalLink, Copy, Check, Eye, ChevronDown, ChevronRight } from "lucide-react";
 
 interface ColumnsOptions {
   readonly onStatusChange: (id: string, status: SellerStatus) => void;
+  readonly expandedRows: Record<string, boolean>;
+  readonly onToggleExpand: (id: string) => void;
   readonly tTable: (key: string) => string;
   readonly tCommon: (key: string) => string;
 }
 
 export function getTrackingColumns({
   onStatusChange,
+  expandedRows,
+  onToggleExpand,
   tTable,
   tCommon,
 }: ColumnsOptions): ColumnDef<TrackingItem>[] {
@@ -64,6 +68,36 @@ export function getTrackingColumns({
       cell: ({ row }) => <CourierBadge courierId={row.original.courier} />,
     },
     {
+      id: "liveTracking",
+      header: () => <span className="font-semibold text-xs">Tracking In-App</span>,
+      cell: ({ row }) => {
+        const item = row.original;
+        const isExpanded = !!expandedRows[item.id];
+
+        return (
+          <Button
+            type="button"
+            variant={isExpanded ? "secondary" : "default"}
+            size="sm"
+            onClick={() => onToggleExpand(item.id)}
+            className="h-7 gap-1 px-2.5 text-[11px] font-semibold"
+          >
+            {isExpanded ? (
+              <>
+                <ChevronDown className="size-3" />
+                <span>Tutup</span>
+              </>
+            ) : (
+              <>
+                <ChevronRight className="size-3" />
+                <span>Lacak</span>
+              </>
+            )}
+          </Button>
+        );
+      },
+    },
+    {
       id: "directLink",
       header: () => <span className="font-semibold text-xs">{tTable("colDirectLink")}</span>,
       cell: ({ row }) => {
@@ -80,18 +114,16 @@ export function getTrackingColumns({
         return (
           <Button
             type="button"
-            variant="default"
+            variant="outline"
             size="sm"
             onClick={handleOpenOfficial}
-            className={`h-7 gap-1 px-2.5 text-[11px] font-semibold ${
-              isPos
-                ? "bg-amber-600 hover:bg-amber-700 text-white"
-                : "bg-primary text-primary-foreground"
+            className={`h-7 gap-1 px-2 text-[11px] font-semibold ${
+              isPos ? "border-amber-300 text-amber-800 hover:bg-amber-50" : ""
             }`}
-            title={isPos ? "Lihat Lokasi & Foto Bukti Penerimaan" : "Buka Portal Resmi Ekspedisi"}
+            title={isPos ? "Buka Link Foto Server Pos" : "Buka Portal Resmi Ekspedisi"}
           >
-            {isPos ? <Eye className="size-3" /> : <ExternalLink className="size-3" />}
-            <span>{isPos ? "Foto & Lokasi" : tTable("colDirectLink")}</span>
+            {isPos ? <Eye className="size-3 text-amber-700" /> : <ExternalLink className="size-3" />}
+            <span>{isPos ? "POD Web" : "Web Resmi"}</span>
           </Button>
         );
       },
@@ -160,7 +192,7 @@ function WaybillCell({
       <button
         type="button"
         onClick={handleCopy}
-        className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
         title={copied ? tCommon("copied") : tCommon("copy")}
       >
         {copied ? (
