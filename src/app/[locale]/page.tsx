@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import type { TrackingItem } from "@/types/tracking";
 import { useTrackingWorkspace } from "@/hooks/use-tracking-workspace";
 import { BulkInputCard } from "@/components/tracking/bulk-input-card";
-import { TrackingTable } from "@/components/tracking/tracking-table";
+import { TrackingCardList } from "@/components/tracking/tracking-card-list";
 
 export default function HomePage(): React.JSX.Element {
   const t = useTranslations("home");
@@ -13,7 +13,6 @@ export default function HomePage(): React.JSX.Element {
     items,
     isHydrated,
     setItems,
-    updateItemStatus,
     clearWorkspace,
   } = useTrackingWorkspace();
 
@@ -23,6 +22,10 @@ export default function HomePage(): React.JSX.Element {
 
   const handleClearItems = (): void => {
     clearWorkspace();
+  };
+
+  const handleRemoveSingleItem = (id: string): void => {
+    setItems(items.filter((item) => item.id !== id));
   };
 
   return (
@@ -45,10 +48,10 @@ export default function HomePage(): React.JSX.Element {
         </div>
 
         <div className="lg:col-span-8">
-          <TrackingTable
+          <TrackingCardList
             items={isHydrated ? items : []}
-            onStatusChange={updateItemStatus}
             onClearWorkspace={clearWorkspace}
+            onRemoveItem={handleRemoveSingleItem}
           />
         </div>
       </div>

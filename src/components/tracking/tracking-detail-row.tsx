@@ -124,7 +124,7 @@ export function TrackingDetailRow({
           <div className="text-[10px] font-medium text-muted-foreground">Pihak Penerima</div>
           <div className="mt-0.5 flex items-center gap-1 font-semibold text-foreground">
             <User className="size-3 shrink-0 text-muted-foreground" />
-            <span className="truncate">{summary.receiver || "-"}</span>
+            <span className="truncate">{summary.receiverName || "-"}</span>
           </div>
         </div>
 

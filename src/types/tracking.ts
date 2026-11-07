@@ -57,8 +57,13 @@ export interface TrackingDetailSummary {
   readonly weight: string;
   readonly origin: string;
   readonly destination: string;
-  readonly shipper: string;
-  readonly receiver: string;
+  readonly shipperName: string;
+  readonly shipperPhone: string;
+  readonly shipperAddress: string;
+  readonly receiverName: string;
+  readonly receiverPhone: string;
+  readonly receiverAddress: string;
+  readonly coordinates?: string;
 }
 
 export interface TrackingDetailResult {
