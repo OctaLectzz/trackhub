@@ -8,22 +8,31 @@ interface TestCase {
 
 const TEST_CASES: readonly TestCase[] = [
   { input: "P2601080046258", expectedCourier: "pos" },
-  { input: "P2509120011223", expectedCourier: "pos" },
-  { input: "12345678901", expectedCourier: "pos" }, // 11 digits standard PosIND
+  { input: "P2611050000002", expectedCourier: "pos" },
+  { input: "12345678901", expectedCourier: "pos" },
   { input: "JP5034350637", expectedCourier: "jnt" },
   { input: "JX6877225553", expectedCourier: "jnt" },
   { input: "JB0033526964", expectedCourier: "jnt" },
+  { input: "200159673253", expectedCourier: "jnt_cargo" },
   { input: "002727224890", expectedCourier: "sicepat" },
-  { input: "001442365534", expectedCourier: "sicepat" },
+  { input: "005244878857", expectedCourier: "sicepat" },
   { input: "SPXID04829103847", expectedCourier: "spx" },
+  { input: "ID19633040668X", expectedCourier: "spx" },
   { input: "1000293847162", expectedCourier: "anteraja" },
+  { input: "11000098821211", expectedCourier: "anteraja" },
+  { input: "11LP1715594502994", expectedCourier: "lion" },
   { input: "LP12345678901", expectedCourier: "lion" },
   { input: "NINJAXP928374", expectedCourier: "ninja" },
-  { input: "IDS001234567890", expectedCourier: "idexpress" },
+  { input: "NLIDAP1054810680", expectedCourier: "ninja" },
+  { input: "IDS001234567890", expectedCourier: "ide" },
+  { input: "LXAD-3194878510", expectedCourier: "lex" },
+  { input: "TKP01-C0KQJMC", expectedCourier: "kurir_tokopedia" },
+  { input: "MIS2306220000048967", expectedCourier: "sap" },
+  { input: "KGX14900512911", expectedCourier: "kgx" },
+  { input: "030205696069", expectedCourier: "tiki" },
+  { input: "AGN42256", expectedCourier: "wahana" },
   { input: "SOCAG001234567", expectedCourier: "jne" },
-  { input: "0123456789012345", expectedCourier: "jne" },
-  { input: "661234567890", expectedCourier: "tiki" },
-  { input: "W1234567", expectedCourier: "wahana" },
+  { input: "582230008329223", expectedCourier: "jne" },
 ];
 
 console.log("=== RUNNING HEURISTIC COURIER DETECTOR TESTS ===");
@@ -46,11 +55,12 @@ console.log("\n=== RUNNING TEXT SANITIZER & DEDUPLICATION TESTS ===");
 const rawDirtySample = `
   # P2601080046258
   P2601080046258 (duplicate)
-  JP5034350637, 002727224890 ; SPXID04829103847
+  JP5034350637, 005244878857 | SPXID04829103847
   
-  "SOCAG001234567"
-  • 1000293847162
-  JP5034350637 (duplicate)
+  "LXAD-3194878510"
+  • TKP01-C0KQJMC
+  11LP1715594502994 (duplicate)
+  11LP1715594502994
   xyz (too short)
 `;
 
@@ -66,7 +76,7 @@ console.log(`PosIND Mirror URL: ${urlsPos.mirrorUrl}`);
 
 if (
   passedCount === TEST_CASES.length &&
-  sanitizeResult.uniqueCount === 6 &&
+  sanitizeResult.uniqueCount === 7 &&
   sanitizeResult.duplicateCount === 2 &&
   urlsPos.officialUrl.includes("kibananew.posindonesia.co.id:4433")
 ) {

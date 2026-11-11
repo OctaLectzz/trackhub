@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
-import type { CourierId, TrackingItem } from "@/types/tracking";
+import type { TrackingItem } from "@/types/tracking";
 import { getAllCouriers } from "@/lib/courier-registry";
 import { TrackingCard } from "@/components/tracking/tracking-card";
 import { ExportDialog } from "@/components/tracking/export-dialog";
@@ -46,7 +46,6 @@ export function TrackingCardList({
 
   return (
     <div className="space-y-4">
-      {/* Control Header Card */}
       <Card className="shadow-xs border-border/80">
         <CardHeader className="p-4 pb-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -71,7 +70,7 @@ export function TrackingCardList({
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari nomor resi..."
+                  placeholder={commonT("search")}
                   className="h-8 w-40 rounded-lg border border-input bg-card pl-8 pr-3 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:w-52"
                 />
               </div>
@@ -96,7 +95,7 @@ export function TrackingCardList({
                 onClick={() => setIsExportDialogOpen(true)}
                 disabled={items.length === 0}
                 className="h-8 gap-1.5 px-2.5 text-xs font-semibold text-emerald-700 border-emerald-200 hover:bg-emerald-50"
-                title="Ekspor Laporan Spreadsheet"
+                title={commonT("export")}
               >
                 <Download className="size-3.5" />
                 <span>{commonT("export")}</span>
@@ -119,7 +118,6 @@ export function TrackingCardList({
         </CardHeader>
       </Card>
 
-      {/* Stream List Kartu Pelacakan */}
       {filteredItems.length > 0 ? (
         <div className="space-y-4">
           {filteredItems.map((item) => (
@@ -127,6 +125,7 @@ export function TrackingCardList({
               key={item.id}
               waybill={item.waybill}
               courier={item.courier}
+              initialPhoneLast5={item.jnePhoneLast5}
               onRemove={onRemoveItem ? () => onRemoveItem(item.id) : undefined}
             />
           ))}

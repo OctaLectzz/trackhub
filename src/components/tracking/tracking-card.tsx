@@ -1,23 +1,25 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import type { CourierId, TrackingDetailResult } from "@/types/tracking";
 import { getCourierConfig } from "@/lib/courier-registry";
+import {
+  getCachedTracking,
+  setCachedTracking,
+  removeCachedTracking,
+} from "@/lib/tracking-cache";
 import { CourierBadge } from "@/components/tracking/courier-badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  ExternalLink,
-  Copy,
-  Check,
-  Truck,
-  Calendar,
-} from "lucide-react";
+import { ExternalLink, Copy, Check, RotateCcw, Database } from "lucide-react";
 import {
   CardLoadingSkeleton,
   CardErrorState,
+  JneVerificationBar,
   EntityBox,
+  CardMetadataBar,
   PodPhotosSection,
   ManifestTimelineSection,
 } from "./tracking-card-sections";
@@ -25,48 +27,76 @@ import {
 interface TrackingCardProps {
   readonly waybill: string;
   readonly courier: CourierId;
+  readonly initialPhoneLast5?: string;
   readonly onRemove?: () => void;
 }
 
 export function TrackingCard({
   waybill,
   courier,
+  initialPhoneLast5,
   onRemove,
 }: TrackingCardProps): React.JSX.Element {
+  const t = useTranslations("trackingCard");
+
   const [data, setData] = React.useState<TrackingDetailResult | null>(null);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState<boolean>(false);
+  const [isFromCache, setIsFromCache] = React.useState<boolean>(false);
+  const [jnePhone, setJnePhone] = React.useState<string>(initialPhoneLast5 ?? "");
 
   const courierConfig = getCourierConfig(courier);
 
-  const fetchTracking = React.useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const fetchTracking = React.useCallback(
+    async (forceRefresh = false, overridePhone?: string) => {
+      const activePhone = (overridePhone ?? jnePhone).trim();
 
-    try {
-      const res = await fetch(
-        `/api/track?courier=${encodeURIComponent(courier)}&awb=${encodeURIComponent(
-          waybill
-        )}`
-      );
-      const json = (await res.json()) as TrackingDetailResult;
-
-      if (!json.success && json.message) {
-        setError(json.message);
+      if (!forceRefresh) {
+        const cached = getCachedTracking(courier, waybill, activePhone);
+        if (cached) {
+          setData(cached);
+          setIsFromCache(true);
+          setError(null);
+          setLoading(false);
+          return;
+        }
       } else {
-        setData(json);
+        removeCachedTracking(courier, waybill, activePhone);
       }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Gagal memuat pelacakan";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, [waybill, courier]);
+
+      setLoading(true);
+      setError(null);
+      setIsFromCache(false);
+
+      try {
+        const params = new URLSearchParams({ courier, awb: waybill });
+        if (courier === "jne" && activePhone) {
+          params.set("number", activePhone);
+        }
+
+        const res = await fetch(`/api/track?${params.toString()}`);
+        const json = (await res.json()) as TrackingDetailResult;
+
+        if (!json.success) {
+          setError(json.message || "Data resi tidak ditemukan");
+          setData(null);
+        } else {
+          setCachedTracking(courier, waybill, json, activePhone);
+          setData(json);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Gagal memuat pelacakan";
+        setError(msg);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [waybill, courier, jnePhone]
+  );
 
   React.useEffect(() => {
-    void fetchTracking();
+    void fetchTracking(false);
   }, [fetchTracking]);
 
   const handleCopyWaybill = (): void => {
@@ -81,13 +111,11 @@ export function TrackingCard({
     if (navigator.clipboard) {
       void navigator.clipboard.writeText(waybill);
     }
-    const url = courierConfig.officialUrlGenerator(waybill);
-    window.open(url, "_blank", "noopener,noreferrer");
+    window.open(courierConfig.officialUrlGenerator(waybill), "_blank", "noopener,noreferrer");
   };
 
   const handleOpenMirror = (): void => {
-    const url = courierConfig.mirrorUrlGenerator(waybill);
-    window.open(url, "_blank", "noopener,noreferrer");
+    window.open(courierConfig.mirrorUrlGenerator(waybill), "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -104,16 +132,19 @@ export function TrackingCard({
                 className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                 title={copied ? "Tersalin!" : "Salin Resi"}
               >
-                {copied ? (
-                  <Check className="size-3.5 text-emerald-600" />
-                ) : (
-                  <Copy className="size-3.5" />
-                )}
+                {copied ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5" />}
               </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {isFromCache && data && data.success && (
+              <Badge variant="secondary" className="gap-1 text-[10px] font-medium text-muted-foreground">
+                <Database className="size-2.5" />
+                <span>{t("cachedNote")}</span>
+              </Badge>
+            )}
+
             {data && data.success && (
               <Badge
                 variant="outline"
@@ -130,13 +161,24 @@ export function TrackingCard({
             <Button
               type="button"
               variant="outline"
+              size="icon"
+              onClick={() => void fetchTracking(true)}
+              disabled={loading}
+              className="size-7 text-muted-foreground hover:text-foreground"
+              title={t("refreshTitle")}
+            >
+              <RotateCcw className={`size-3 ${loading ? "animate-spin" : ""}`} />
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
               size="sm"
               onClick={handleOpenOfficial}
               className="h-7 gap-1 px-2 text-[11px] font-semibold"
-              title="Buka Portal Resmi Ekspedisi"
             >
               <ExternalLink className="size-3" />
-              <span>Web Resmi</span>
+              <span>{t("officialBtn")}</span>
             </Button>
 
             <Button
@@ -145,9 +187,8 @@ export function TrackingCard({
               size="sm"
               onClick={handleOpenMirror}
               className="h-7 gap-1 px-2 text-[11px] font-medium text-muted-foreground"
-              title="Buka Mirror CekResi Instan"
             >
-              <span>CekResi</span>
+              <span>{t("mirrorBtn")}</span>
             </Button>
 
             {onRemove && (
@@ -157,7 +198,6 @@ export function TrackingCard({
                 size="sm"
                 onClick={onRemove}
                 className="h-7 px-1.5 text-muted-foreground hover:text-destructive"
-                title="Hapus Kartu Ini"
               >
                 ✕
               </Button>
@@ -167,24 +207,33 @@ export function TrackingCard({
       </CardHeader>
 
       <CardContent className="p-4 space-y-4">
+        {courier === "jne" && (
+          <JneVerificationBar
+            phone={jnePhone}
+            onChangePhone={setJnePhone}
+            onSubmit={() => void fetchTracking(true, jnePhone)}
+            loading={loading}
+          />
+        )}
+
         {loading && <CardLoadingSkeleton />}
 
         {error && !loading && (
-          <CardErrorState error={error} onRetry={() => void fetchTracking()} />
+          <CardErrorState error={error} onRetry={() => void fetchTracking(true)} />
         )}
 
         {data && data.success && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
               <EntityBox
-                title="Informasi Pengirim"
+                title={t("senderTitle")}
                 name={data.summary.shipperName}
                 phone={data.summary.shipperPhone}
                 address={data.summary.shipperAddress}
                 variant="blue"
               />
               <EntityBox
-                title="Informasi Penerima"
+                title={t("receiverTitle")}
                 name={data.summary.receiverName}
                 phone={data.summary.receiverPhone}
                 address={data.summary.receiverAddress}
@@ -193,19 +242,16 @@ export function TrackingCard({
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 rounded-lg bg-muted/40 p-2.5 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1 font-medium text-foreground">
-                <Truck className="size-3.5 text-primary" />
-                <span>Layanan:</span>
-                <span className="font-semibold">{data.summary.service}</span>
-              </div>
-              <div className="h-3 w-px bg-border" />
-              <div className="flex items-center gap-1 font-medium text-foreground">
-                <Calendar className="size-3.5 text-primary" />
-                <span>Tanggal:</span>
-                <span>{data.summary.date}</span>
-              </div>
-            </div>
+            <CardMetadataBar
+              service={data.summary.service}
+              date={data.summary.date}
+              weight={data.summary.weight}
+              amount={data.summary.amount}
+              serviceLabel={t("serviceLabel")}
+              dateLabel={t("dateLabel")}
+              weightLabel={t("weightLabel")}
+              amountLabel={t("amountLabel")}
+            />
 
             {data.podPhotos && data.podPhotos.length > 0 && (
               <PodPhotosSection photos={data.podPhotos} />

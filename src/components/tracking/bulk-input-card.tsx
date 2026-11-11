@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Layers, RotateCcw, Sparkles, Filter, CheckCircle2 } from "lucide-react";
+import { Layers, RotateCcw, Sparkles, Filter, CheckCircle2, Phone } from "lucide-react";
 
 interface BulkInputCardProps {
   readonly onProcessItems: (items: readonly TrackingItem[]) => void;
@@ -18,11 +18,10 @@ interface BulkInputCardProps {
 }
 
 const SAMPLE_WAYBILLS = `P2611050000002
-P2611050000005
 P2601080046258
-JP5034350637
-002727224890
-SPXID04829103847`;
+005244878857
+11LP1715594502994
+030205696069`;
 
 export function BulkInputCard({
   onProcessItems,
@@ -35,12 +34,23 @@ export function BulkInputCard({
 
   const [rawText, setRawText] = React.useState<string>("");
   const [selectedCourier, setSelectedCourier] = React.useState<CourierId | "unknown">("unknown");
+  const [jnePhoneLast5, setJnePhoneLast5] = React.useState<string>("");
   const [stats, setStats] = React.useState<{
     uniqueCount: number;
     duplicateCount: number;
   } | null>(null);
 
   const couriersList = React.useMemo(() => getAllCouriers(), []);
+
+  const attachJneVerification = (items: readonly TrackingItem[]): readonly TrackingItem[] => {
+    const cleanPhone = jnePhoneLast5.replace(/\D/g, "").slice(0, 5);
+    if (!cleanPhone) {
+      return items;
+    }
+    return items.map((item) =>
+      item.courier === "jne" ? { ...item, jnePhoneLast5: cleanPhone } : item
+    );
+  };
 
   const handleProcess = (): void => {
     if (!rawText.trim()) {
@@ -55,11 +65,12 @@ export function BulkInputCard({
       duplicateCount: result.duplicateCount,
     });
 
-    onProcessItems(result.items);
+    onProcessItems(attachJneVerification(result.items));
   };
 
   const handleClear = (): void => {
     setRawText("");
+    setJnePhoneLast5("");
     setStats(null);
     onClearItems();
   };
@@ -128,6 +139,25 @@ export function BulkInputCard({
             ))}
           </select>
         </div>
+
+        {selectedCourier === "jne" && (
+          <div className="flex flex-col gap-1.5 rounded-lg border border-blue-200 bg-blue-50/40 p-2.5">
+            <label className="flex items-center gap-1.5 text-[11px] font-medium text-blue-900">
+              <Phone className="size-3 text-blue-600" />
+              <span>{t("jnePhoneLabel")}</span>
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={5}
+              value={jnePhoneLast5}
+              onChange={(e) => setJnePhoneLast5(e.target.value.replace(/\D/g, "").slice(0, 5))}
+              placeholder={t("jnePhonePlaceholder")}
+              className="h-8 w-full rounded-md border border-blue-200 bg-card px-2.5 font-mono text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500"
+              disabled={isProcessing}
+            />
+          </div>
+        )}
 
         {stats && (
           <div className="flex flex-wrap items-center gap-2 rounded-lg bg-muted/60 p-2.5 text-xs">

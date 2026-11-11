@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { CourierId, TrackingDetailResult } from "@/types/tracking";
+import type { CourierId } from "@/types/tracking";
 import {
   fetchPosIndonesiaDirect,
   fetchBinderByteTracking,
   createEmptySummary,
 } from "./track-helpers";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const { searchParams } = request.nextUrl;
   const courier = searchParams.get("courier") as CourierId | null;
   const awb = searchParams.get("awb")?.trim();
+  const phoneNumber = searchParams.get("number")?.trim() || undefined;
+  const transactionDate = searchParams.get("date")?.trim() || undefined;
 
   if (!courier || !awb) {
     return NextResponse.json(
@@ -19,11 +23,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         summary: createEmptySummary(awb ?? "", courier ?? "unknown"),
         history: [],
       },
-      { status: 400 }
+      {
+        status: 400,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+      }
     );
   }
 
-  // 1. Pos Indonesia Direct Scraper (POD photo, phone, coordinates, full address)
+  // Pos Indonesia direct scraping (POD photo, GPS coordinates, recipient verification)
   if (courier === "pos") {
     try {
       const posResult = await fetchPosIndonesiaDirect(awb);
@@ -42,9 +51,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  // 2. Commercial Couriers via BinderByte API
+  // Commercial couriers via BinderByte logistics gateway
   const apiKey = process.env.BINDERBYTE_API_KEY;
-  if (!apiKey) {
+  if (!apiKey || !apiKey.trim()) {
     return NextResponse.json(
       {
         success: false,
@@ -52,11 +61,32 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         summary: createEmptySummary(awb, courier),
         history: [],
       },
-      { status: 503 }
+      {
+        status: 503,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+      }
     );
   }
 
-  const bbResult = await fetchBinderByteTracking(apiKey, courier, awb);
+  const bbResult = await fetchBinderByteTracking(
+    apiKey,
+    courier,
+    awb,
+    phoneNumber,
+    transactionDate
+  );
+
+  // Error responses should never be cached by CDN edges
+  if (!bbResult.success) {
+    return NextResponse.json(bbResult, {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+      },
+    });
+  }
 
   return NextResponse.json(bbResult, {
     status: 200,

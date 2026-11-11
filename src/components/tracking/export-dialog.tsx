@@ -22,7 +22,7 @@ export function ExportDialog({
   selectedItems,
 }: ExportDialogProps): React.JSX.Element | null {
   const t = useTranslations("export");
-  const commonT = useTranslations("common");
+  // common translations unused
 
   const [scope, setScope] = React.useState<"all" | "selected">("all");
   const [format, setFormat] = React.useState<"xlsx" | "csv">("xlsx");

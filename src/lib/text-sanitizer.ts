@@ -2,7 +2,7 @@ import type { CourierId, SanitizeResult, TrackingItem } from "@/types/tracking";
 import { detectCourier, generateTrackingUrls } from "@/lib/courier-registry";
 
 function generateDeterministicId(waybill: string, index: number): string {
-  const clean = waybill.replace(/[^A-Z0-9]/gi, "").toLowerCase();
+  const clean = waybill.replace(/[^A-Za-z0-9-]/g, "").toLowerCase();
   return `${clean}-${Date.now().toString(36)}-${index}`;
 }
 
@@ -19,7 +19,7 @@ export function sanitizeBulkWaybills(
     };
   }
 
-  // 1. Split by lines first
+  // Split by line breaks first
   const lines = rawInput.split(/\r?\n/);
   const seenWaybills = new Set<string>();
   const items: TrackingItem[] = [];
@@ -28,21 +28,25 @@ export function sanitizeBulkWaybills(
   let duplicateCount = 0;
 
   for (const line of lines) {
-    // 2. Further split lines by commas, semicolons, or tabs
-    const lineTokens = line.split(/[,;\t]/);
+    // Further split lines by common delimiters: comma, semicolon, tab, pipe
+    const lineTokens = line.split(/[,;\t|]/);
 
     for (const token of lineTokens) {
-      // 3. Extract the primary alphanumeric candidate, stripping trailing parentheses/notes like "(duplicate)"
+      // Strip parenthesized annotations like "(duplicate)"
       const strippedNote = token.replace(/\(.*\)/g, "");
 
-      // Match contiguous alphanumeric sequence of at least 5 chars
-      const matches = strippedNote.match(/[A-Za-z0-9]{5,}/g);
+      // Match contiguous alphanumeric strings including hyphens (e.g. LXAD-3194878510)
+      const matches = strippedNote.match(/[A-Za-z0-9-]{5,}/g);
       if (!matches) {
         continue;
       }
 
       for (const candidate of matches) {
-        const cleaned = candidate.trim();
+        const cleaned = candidate.replace(/^-+|-+$/g, "").trim();
+        if (cleaned.length < 5) {
+          continue;
+        }
+
         rawCount++;
 
         const normalizedKey = cleaned.toUpperCase();
